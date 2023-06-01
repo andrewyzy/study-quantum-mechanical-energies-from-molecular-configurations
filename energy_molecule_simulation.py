@@ -1,8 +1,10 @@
+import math
+
 class Molecule:
     def __init__(self, max_energy_level, position):
         self.max_energy_level = max_energy_level
         self.current_energy_level = 0
-        self.position = position  # position as a simple integer for now
+        self.position = position  # position as a tuple (x, y, z)
 
     def absorb_light(self, energy):
         potential_energy_level = self.current_energy_level + energy
@@ -35,23 +37,23 @@ class System:
         for molecule in self.molecules:
             excess_energy = molecule.absorb_light(energy)
             if excess_energy > 0:
-                # Find a nearby molecule to transfer energy to
-                # For simplicity, just find the next molecule in the list
-                next_molecule_index = (self.molecules.index(molecule) + 1) % len(self.molecules)
-                self.molecules[next_molecule_index].transfer_energy(excess_energy)
+                # Find the nearest molecule to transfer energy to
+                distances = [self.distance(molecule.position, other_molecule.position) for other_molecule in self.molecules if other_molecule != molecule]
+                min_distance_index = distances.index(min(distances))
+                self.molecules[min_distance_index].transfer_energy(excess_energy)
+
+    @staticmethod
+    def distance(position1, position2):
+        x1, y1, z1 = position1
+        x2, y2, z2 = position2
+        return math.sqrt((x2 - x1)**2 + (y2 - y1)**2 + (z2 - z1)**2)
 
 
-my_molecule = Molecule(5, 0)  # A molecule that can have energy levels 0 through 5 and is at position 0
-
-# Molecule absorbs light and increases its energy level
-my_molecule.absorb_light(2)
-my_molecule.absorb_light(3)
-my_molecule.absorb_light(1)
-
+# Example usage
 system = System()
-system.add_molecule(Molecule(5, 0))  # Molecule with max energy level 5 at position 0
-system.add_molecule(Molecule(5, 1))  # Molecule with max energy level 5 at position 1
-system.add_molecule(Molecule(5, 2))  # Molecule with max energy level 5 at position 2
+system.add_molecule(Molecule(5, (0, 0, 0)))  # Molecule with max energy level 5 at position (0, 0, 0)
+system.add_molecule(Molecule(5, (1, 1, 1)))  # Molecule with max energy level 5 at position (1, 1, 1)
+system.add_molecule(Molecule(5, (2, 2, 2)))  # Molecule with max energy level 5 at position (2, 2, 2)
 
 system.pulse_light(2)  # Gives 2 units of energy to all molecules
 system.pulse_light(4)  # Gives 4 units of energy to all molecules
