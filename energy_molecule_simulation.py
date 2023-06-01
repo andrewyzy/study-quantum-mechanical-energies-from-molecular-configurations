@@ -1,10 +1,12 @@
 import math
+import random
 
 class Molecule:
-    def __init__(self, max_energy_level, position):
+    def __init__(self, max_energy_level, position, orientation):
         self.max_energy_level = max_energy_level
         self.current_energy_level = 0
         self.position = position  # position as a tuple (x, y, z)
+        self.orientation = orientation  # orientation as a unit vector (dx, dy, dz)
 
     def absorb_light(self, energy):
         potential_energy_level = self.current_energy_level + energy
@@ -27,20 +29,24 @@ class Molecule:
             print("The molecule received too much energy! It cannot accept it.")
 
 class System:
-    def __init__(self):
+    def __init__(self, temperature):
         self.molecules = []
+        self.temperature = temperature  # Temperature of the system, which influences the energy levels
 
     def add_molecule(self, molecule):
         self.molecules.append(molecule)
 
     def pulse_light(self, energy):
         for molecule in self.molecules:
-            excess_energy = molecule.absorb_light(energy)
+            excess_energy = molecule.absorb_light(energy + self.temperature)
             if excess_energy > 0:
                 # Find the nearest molecule to transfer energy to
                 distances = [self.distance(molecule.position, other_molecule.position) for other_molecule in self.molecules if other_molecule != molecule]
                 min_distance_index = distances.index(min(distances))
-                self.molecules[min_distance_index].transfer_energy(excess_energy)
+                # Add in an orientation factor which reduces the energy transferred
+                orientation_factor = random.uniform(0.1, 1.0)
+                self.molecules[min_distance_index].transfer_energy(excess_energy * orientation_factor)
+
 
     @staticmethod
     def distance(position1, position2):
@@ -49,11 +55,10 @@ class System:
         return math.sqrt((x2 - x1)**2 + (y2 - y1)**2 + (z2 - z1)**2)
 
 
-# Example usage
-system = System()
-system.add_molecule(Molecule(5, (0, 0, 0)))  # Molecule with max energy level 5 at position (0, 0, 0)
-system.add_molecule(Molecule(5, (1, 1, 1)))  # Molecule with max energy level 5 at position (1, 1, 1)
-system.add_molecule(Molecule(5, (2, 2, 2)))  # Molecule with max energy level 5 at position (2, 2, 2)
+system = System(temperature=2)
+system.add_molecule(Molecule(5, (0, 0, 0), (1, 0, 0)))  # Molecule with max energy level 5 at position (0, 0, 0)
+system.add_molecule(Molecule(5, (1, 1, 1), (0, 1, 0)))  # Molecule with max energy level 5 at position (1, 1, 1)
+system.add_molecule(Molecule(5, (2, 2, 2), (0, 0, 1)))  # Molecule with max energy level 5 at position (2, 2, 2)
 
 system.pulse_light(2)  # Gives 2 units of energy to all molecules
 system.pulse_light(4)  # Gives 4 units of energy to all molecules
