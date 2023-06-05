@@ -3,13 +3,14 @@ import random
 import numpy as np
 
 class Molecule:
-    def __init__(self, max_energy_level, position, orientation, molecule_type):
+    def __init__(self, max_energy_level, position, orientation, molecule_type, spectral_absorption_coefficients):
         self.max_energy_level = max_energy_level
         self.current_energy_level = 0
         self.position = position  # position as a tuple (x, y, z)
         self.orientation = np.array(orientation)  # orientation as a vector [dx, dy, dz]
         self.molecule_type = molecule_type  # the type of molecule (e.g., 'methane', 'ethane', 'propane')
         self.h = 0.1  # A chosen energy unit. (akin to Planck's constant), and any energy gain will be rounded to the nearest multiple of h. Note that this is a gross oversimplification and doesn't fully capture quantum mechanical behavior
+        self.spectral_absorption_coefficients = spectral_absorption_coefficients
 
         # Depending on the type of molecule, set different properties
         if molecule_type == 'CH4':  # methane
@@ -30,22 +31,26 @@ class Molecule:
         else:
             raise ValueError('Invalid molecule type')
 
-    def absorb_light(self, energy, temperature):
+    def absorb_light(self, energy, wavelength, temperature):
         R = 8.314
         Ea = self.activation_energy
         A = self.max_energy_level
         adjusted_max_energy_level = A * math.exp(-Ea / (100 * R * temperature))
         print("adjusted_max_energy_level = ", adjusted_max_energy_level)
 
-
+        if wavelength in self.spectral_absorption_coefficients:
+            energy *= self.spectral_absorption_coefficients[wavelength]
+        
         # Add a random factor to energy absorption
         absorbed_energy = random.uniform(0, energy / self.heat_capacity)
-        print(f"Absorbed energy: {absorbed_energy}")
+        
+        # Quantum mechanical behavior
+        absorbed_energy = round(absorbed_energy / self.h) * self.h
 
+        print(f"Absorbed energy: {absorbed_energy}")
 
         potential_energy_level = self.current_energy_level + absorbed_energy
         print(f"Potential energy level before rounding: {potential_energy_level}")
-
 
         # Add a condition to check if the potential energy level is too high
         if potential_energy_level > adjusted_max_energy_level:
@@ -81,11 +86,10 @@ class System:
     def add_molecule(self, molecule):
         self.molecules.append(molecule)
 
-    def pulse_light(self, energy):
+    def pulse_light(self, energy, wavelength):
         for molecule in self.molecules:
-            # Make energy distribution probabilistic
             distributed_energy = random.uniform(0, energy)
-            excess_energy = molecule.absorb_light(distributed_energy + self.temperature, self.temperature)
+            excess_energy = molecule.absorb_light(distributed_energy + self.temperature, wavelength, self.temperature)
             if excess_energy > 0:
                 # Find the nearest molecule to transfer energy to
                 distances = [self.distance(molecule.position, other_molecule.position) for other_molecule in self.molecules if other_molecule != molecule]
@@ -106,10 +110,11 @@ class System:
         return math.sqrt((x2 - x1)**2 + (y2 - y1)**2 + (z2 - z1)**2)
 
 system = System(temperature=200)
-system.add_molecule(Molecule(5, (0, 0, 0), [1, 0, 0], 'CH4'))  # A methane molecule
-system.add_molecule(Molecule(5, (1, 1, 1), [0, 1, 0], 'C2H6'))  # An ethane molecule
-system.add_molecule(Molecule(5, (2, 2, 2), [0, 0, 1], 'C3H8'))  # A propane molecule
+spectral_absorption_coefficients = {400: 0.8, 500: 0.9, 600: 1.0, 700: 0.9, 800: 0.8}
+system.add_molecule(Molecule(5, (0, 0, 0), [1, 0, 0], 'CH4', spectral_absorption_coefficients))
+system.add_molecule(Molecule(5, (1, 1, 1), [0, 1, 0], 'C2H6', spectral_absorption_coefficients))
+system.add_molecule(Molecule(5, (2, 2, 2), [0, 0, 1], 'C3H8', spectral_absorption_coefficients))
 
-
-system.pulse_light(2)  # Gives 2 units of energy to all molecules
-system.pulse_light(4)  # Gives 4 units of energy to all molecules
+# Now you also need to specify the wavelength when pulsing light
+system.pulse_light(2, 500)
+system.pulse_light(4, 600)
