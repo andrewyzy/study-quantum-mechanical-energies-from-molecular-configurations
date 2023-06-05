@@ -2,6 +2,7 @@ import math
 import random
 import numpy as np
 
+
 class Molecule:
     def __init__(self, max_energy_level, position, orientation, molecule_type, spectral_absorption_coefficients):
         self.max_energy_level = max_energy_level
@@ -9,8 +10,10 @@ class Molecule:
         self.position = position  # position as a tuple (x, y, z)
         self.orientation = np.array(orientation)  # orientation as a vector [dx, dy, dz]
         self.molecule_type = molecule_type  # the type of molecule (e.g., 'methane', 'ethane', 'propane')
-        self.h = 0.1  # A chosen energy unit. (akin to Planck's constant), and any energy gain will be rounded to the nearest multiple of h. Note that this is a gross oversimplification and doesn't fully capture quantum mechanical behavior
+        self.h = 0.1  # A chosen energy unit. (akin to Planck's constant)
         self.spectral_absorption_coefficients = spectral_absorption_coefficients
+
+        self.n = 0  # Principle quantum number
 
         # Depending on the type of molecule, set different properties
         if molecule_type == 'CH4':  # methane
@@ -45,7 +48,12 @@ class Molecule:
         absorbed_energy = random.uniform(0, energy / self.heat_capacity)
         
         # Quantum mechanical behavior
-        absorbed_energy = round(absorbed_energy / self.h) * self.h
+        energy_level = round(absorbed_energy / self.h)
+        if energy_level - self.n == 1:  # Check the selection rule Δn = 1
+            self.n = energy_level
+            absorbed_energy = energy_level * self.h
+        else:
+            absorbed_energy = 0  # If the energy doesn't match a quantum leap, it's not absorbed
 
         print(f"Absorbed energy: {absorbed_energy}")
 
@@ -68,6 +76,7 @@ class Molecule:
             return adjusted_excess_energy
 
 
+
     def transfer_energy(self, energy):
         potential_energy_level = self.current_energy_level + energy
         print("potential_energy_level = ", potential_energy_level)
@@ -88,7 +97,8 @@ class System:
 
     def pulse_light(self, energy, wavelength):
         for molecule in self.molecules:
-            distributed_energy = random.uniform(0, energy)
+            # Distributed energy is calculated based on quantum energy levels
+            distributed_energy = round(random.uniform(0, energy) / molecule.h) * molecule.h
             excess_energy = molecule.absorb_light(distributed_energy + self.temperature, wavelength, self.temperature)
             if excess_energy > 0:
                 # Find the nearest molecule to transfer energy to
@@ -108,6 +118,7 @@ class System:
         x1, y1, z1 = position1
         x2, y2, z2 = position2
         return math.sqrt((x2 - x1)**2 + (y2 - y1)**2 + (z2 - z1)**2)
+    
 
 system = System(temperature=200)
 spectral_absorption_coefficients = {400: 0.8, 500: 0.9, 600: 1.0, 700: 0.9, 800: 0.8}
